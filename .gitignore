@@ -1,0 +1,35 @@
+# dependencies
+node_modules/
+
+# environment variables
+.env
+.env.*
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# uploads (if you store files)
+uploads/
+
+# temp files
+tmp/
+temp/
+
+# 🔥 VERY IMPORTANT (your issue)
+serviceAccountKey.json
+
+# build (if any)
+dist/
+build/
