@@ -12,46 +12,69 @@ dotenv.config();
 
 const app = express();
 
+// =======================
 // ✅ MIDDLEWARE
+// =======================
 app.use(express.json());
 
-// ✅ CORS (FIXED for production + Vercel)
-app.use(cors({
-  origin: [
-    "http://localhost:5173",              // local frontend
-    "https://medi-log-frontend.vercel.app/",         // your Vercel domain (change if needed)
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-}));
+// =======================
+// ✅ CORS CONFIG (FIXED)
+// =======================
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://medi-log-frontend.vercel.app", // ❌ removed trailing slash
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
+// =======================
 // ✅ ROUTES
+// =======================
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/user-medicines", userMedicineRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/ocr", ocrRoutes);
 
+// =======================
 // ✅ TEST ROUTE
+// =======================
 app.get("/", (req, res) => {
-  res.send("API running...");
+  res.status(200).send("API running 🚀");
 });
 
-// ✅ START SERVER (FIXED properly)
+// =======================
+// ✅ START SERVER (RENDER SAFE)
+// =======================
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
+    console.log("🔄 Starting backend...");
+
+    // ⚠️ DB CONNECTION SAFETY
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI is not defined in environment variables");
+    }
+
     console.log("🔄 Connecting to MongoDB...");
     await connectDB();
     console.log("✅ MongoDB Connected Successfully");
 
+    // ✅ IMPORTANT: MUST BIND TO 0.0.0.0 FOR RENDER
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
 
   } catch (error) {
-    console.error("❌ Server failed to start:", error);
+    console.error("❌ Server failed to start:");
+    console.error(error.message);
+
+    // ❌ CRITICAL: EXIT so Render shows proper error logs
     process.exit(1);
   }
 };
