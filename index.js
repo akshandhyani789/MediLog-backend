@@ -53,12 +53,17 @@
 
 import express from "express";
 
+console.log("START");
+
 const app = express();
 
-console.log("START");
+app.get("/", (req, res) => {
+  res.send("OK");
+});
 
 const PORT = process.env.PORT || 5000;
 
+// 🔥 CRITICAL FIX FOR RENDER
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("SERVER RUNNING");
+  console.log("SERVER RUNNING ON PORT", PORT);
 });
