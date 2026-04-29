@@ -55,9 +55,7 @@ const startServer = async () => {
       throw new Error("MONGO_URI is not defined in environment variables");
     }
 
-    console.log("🔄 Connecting to MongoDB...");
     await connectDB();
-    console.log("✅ MongoDB Connected Successfully");
 
     // ✅ IMPORTANT: MUST BIND TO 0.0.0.0 FOR RENDER
     app.listen(PORT, "0.0.0.0", () => {
