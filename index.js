@@ -13,58 +13,110 @@ dotenv.config();
 
 const app = express();
 
-const PORT = process.env.PORT || 5000;
+// ========================
+// ENV
+// ========================
+const PORT = 5000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
-// Middleware
+// ========================
+// MIDDLEWARE
+// ========================
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://medilog-henna.vercel.app",
+];
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "https://medi-log-frontend.vercel.app",
-      "https://medilog-henna.vercel.app",
-    ],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(null, true); // dev-safe
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Routes
+// ========================
+// ROOT ROUTE (MUST BE BEFORE 404)
+// ========================
+app.get("/", (req, res) => {
+  res.json({
+    message: "🚀 MediLog Backend is running",
+    health: "/health",
+    status: "OK",
+  });
+});
+
+// ========================
+// ROUTES
+// ========================
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/user-medicines", userMedicineRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/ocr", ocrRoutes);
 
-// Health check
+// ========================
+// HEALTH CHECK
+// ========================
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
     mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    environment: NODE_ENV,
   });
 });
 
-// Error handler
+// ========================
+// 404 HANDLER (LAST)
+// ========================
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    path: req.originalUrl,
+  });
+});
+
+// ========================
+// ERROR HANDLER
+// ========================
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error("❌ Server Error:", err);
+
   res.status(500).json({
-    error: NODE_ENV === "development" ? err.message : "Internal server error",
+    error:
+      NODE_ENV === "development"
+        ? err.message
+        : "Internal server error",
   });
 });
 
-// Start server
-const start = async () => {
+// ========================
+// START SERVER
+// ========================
+const startServer = async () => {
   try {
     await connectDB();
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log("=================================================");
+      console.log("🚀 MediLog Backend Running");
+      console.log("=================================================");
+      console.log(`🌐 http://localhost:${PORT}`);
+      console.log(`🧪 http://localhost:${PORT}/health`);
+      console.log("=================================================");
     });
   } catch (err) {
-    console.error("❌ Server failed:", err);
+    console.error("❌ Failed to start server:", err);
     process.exit(1);
   }
 };
 
-start();
+startServer();
