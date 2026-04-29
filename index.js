@@ -62,6 +62,7 @@ app.use("/api/medicines", medicineRoutes);
 app.use("/api/user-medicines", userMedicineRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/ocr", ocrRoutes);
+app.use("/api/barcode", medicineRoutes);
 
 // ========================
 // HEALTH CHECK

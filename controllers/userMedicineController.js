@@ -117,3 +117,56 @@ export const deleteUserMedicine = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+export const updateUserMedicine = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { id } = req.params;
+
+    console.log("✏️ Updating medicine:", id);
+
+    const medicine = await UserMedicine.findById(id);
+
+    if (!medicine) {
+      return res.status(404).json({ error: "Medicine not found" });
+    }
+
+    // 🔒 Ownership check
+    if (medicine.userId !== userId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    // ✅ Proper field mapping (VERY IMPORTANT)
+    if (req.body.name !== undefined) {
+      medicine.customMedicine.name = req.body.name;
+    }
+
+    if (req.body.brand !== undefined) {
+      medicine.customMedicine.brand = req.body.brand;
+    }
+
+    if (req.body.category !== undefined) {
+      medicine.category = req.body.category;
+    }
+
+    if (req.body.stock !== undefined) {
+      medicine.stock = Number(req.body.stock);
+    }
+
+    if (req.body.expiryDate) {
+      medicine.expiryDate = new Date(req.body.expiryDate);
+    }
+
+    const updated = await medicine.save();
+
+    console.log("✅ Updated:", updated);
+
+    res.json({
+      message: "Medicine updated successfully",
+      medicine: updated,
+    });
+
+  } catch (error) {
+    console.error("❌ Update error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};

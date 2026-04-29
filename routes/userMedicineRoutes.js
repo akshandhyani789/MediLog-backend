@@ -4,10 +4,13 @@ import {
   addUserMedicine,
   getUserMedicines,
   deleteUserMedicine,
+  updateUserMedicine,
 } from "../controllers/userMedicineController.js";
+
 
 const router = express.Router();
 
+router.put("/:id", authMiddleware, updateUserMedicine);
 router.post("/", authMiddleware, addUserMedicine);
 router.get("/", authMiddleware, getUserMedicines);
 router.delete("/:id", authMiddleware, deleteUserMedicine);

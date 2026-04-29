@@ -1,11 +1,8 @@
 import express from "express";
-import {
-  getMedicineByBarcode
-} from "../controllers/medicineController.js";
+import { getMedicineByBarcode } from "../controllers/medicineController.js";
 
 const router = express.Router();
 
 router.get("/:barcode", getMedicineByBarcode);
-// router.post("/", createMedicine);
 
 export default router;
