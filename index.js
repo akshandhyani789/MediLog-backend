@@ -1,171 +1,56 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import mongoose from "mongoose";
 
-// ✅ STEP 1: Load environment variables FIRST
-dotenv.config();
-
-// ✅ STEP 2: Validate critical environment variables before anything else
-const validateEnv = () => {
-  const required = ["MONGO_URI", "FIREBASE_PROJECT_ID", "FIREBASE_CLIENT_EMAIL", "FIREBASE_PRIVATE_KEY"];
-  const missing = required.filter(key => !process.env[key]);
-
-  if (missing.length > 0) {
-    console.error("❌ FATAL: Missing required environment variables:");
-    missing.forEach(key => console.error(`   - ${key}`));
-    process.exit(1);
-  }
-};
-
-validateEnv();
-
-// ✅ STEP 3: Define PORT before using it
-const PORT = process.env.PORT || 5000;
-const NODE_ENV = process.env.NODE_ENV || "development";
-
-// ✅ STEP 4: Create Express app
-const app = express();
-
-// ✅ STEP 5: Setup middleware
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-// ✅ STEP 6: Setup CORS - Accept requests from Vercel and localhost
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "http://127.0.0.1:5173",
-      "https://medi-log-frontend.vercel.app",
-      process.env.FRONTEND_URL || "",
-    ].filter(Boolean),
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    credentials: true,
-    maxAge: 86400,
-  })
-);
-
-// ✅ STEP 7: Import and setup routes (synchronous - safer)
+// Routes
 import medicineRoutes from "./routes/medicineRoutes.js";
 import userMedicineRoutes from "./routes/userMedicineRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import ocrRoutes from "./routes/ocrRoute.js";
 
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// =======================
+// MIDDLEWARE
+// =======================
+app.use(express.json());
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://medi-log-frontend.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// =======================
+// ROUTES
+// =======================
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/user-medicines", userMedicineRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/ocr", ocrRoutes);
 
-// ✅ STEP 8: Health check endpoints (required by Render)
+// =======================
+// TEST ROUTES
+// =======================
 app.get("/", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    message: "MediLog API running 🚀",
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString(),
-  });
+  res.send("🚀 MediLog Backend Running");
 });
 
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "healthy",
-    timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-  });
+  res.json({ status: "ok" });
 });
 
-// ✅ STEP 9: 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: "Route not found", path: req.path });
+// =======================
+// START SERVER (IMPORTANT FOR RENDER)
+// =======================
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
-
-// ✅ STEP 10: Error handler
-app.use((err, req, res, next) => {
-  console.error("❌ Unhandled error:", err);
-  res.status(500).json({
-    error: "Internal server error",
-    message: NODE_ENV === "development" ? err.message : undefined,
-  });
-});
-
-// ✅ STEP 11: Connect to MongoDB
-import connectDB from "./config/db.js";
-
-const startServer = async () => {
-  console.log("\n" + "=".repeat(60));
-  console.log("🚀 MediLog Backend Starting...");
-  console.log("=".repeat(60));
-  console.log(`📍 Environment: ${NODE_ENV}`);
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`📍 MongoDB URI: ${process.env.MONGO_URI?.split("@")[1] || "N/A"}`);
-  console.log("=".repeat(60) + "\n");
-
-  try {
-    // Connect to MongoDB
-    console.log("🔄 Step 1: Connecting to MongoDB...");
-    await connectDB();
-    console.log("✅ Step 1 Complete: MongoDB connected\n");
-
-    // Start HTTP server (CRITICAL: Must bind to 0.0.0.0 for Render)
-    console.log("🔄 Step 2: Starting HTTP server on 0.0.0.0...");
-    const server = app.listen(PORT, "0.0.0.0", () => {
-      console.log("✅ Step 2 Complete: HTTP server listening\n");
-      console.log("=".repeat(60));
-      console.log("✨ SERVER READY");
-      console.log("=".repeat(60));
-      console.log(`🌐 API URL: http://localhost:${PORT}`);
-      console.log(`🏥 Health: http://localhost:${PORT}/health`);
-      console.log("=".repeat(60) + "\n");
-    });
-
-    // Handle server errors
-    server.on("error", (err) => {
-      console.error("❌ Server error:", err.message);
-      if (err.code === "EADDRINUSE") {
-        console.error(`   Port ${PORT} is already in use!`);
-      }
-      process.exit(1);
-    });
-
-  } catch (error) {
-    console.error("\n" + "=".repeat(60));
-    console.error("❌ FATAL: Server failed to start");
-    console.error("=".repeat(60));
-    console.error("Error:", error.message);
-    if (error.stack) {
-      console.error("\nStack trace:", error.stack);
-    }
-    console.error("=".repeat(60) + "\n");
-    process.exit(1);
-  }
-};
-
-// ✅ STEP 12: Graceful shutdown handlers
-process.on("SIGTERM", () => {
-  console.log("\n📡 SIGTERM received - Shutting down gracefully...");
-  mongoose.connection.close();
-  process.exit(0);
-});
-
-process.on("SIGINT", () => {
-  console.log("\n📡 SIGINT received - Shutting down gracefully...");
-  mongoose.connection.close();
-  process.exit(0);
-});
-
-// Handle uncaught exceptions
-process.on("uncaughtException", (err) => {
-  console.error("❌ Uncaught Exception:", err);
-  process.exit(1);
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
-  process.exit(1);
-});
-
-// ✅ STEP 13: Start the server
-startServer();
