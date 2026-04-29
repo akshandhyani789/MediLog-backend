@@ -12,14 +12,8 @@ dotenv.config();
 
 const app = express();
 
-// =======================
-// ✅ MIDDLEWARE
-// =======================
 app.use(express.json());
 
-// =======================
-// ✅ CORS CONFIG (FIXED)
-// =======================
 app.use(
   cors({
     origin: [
