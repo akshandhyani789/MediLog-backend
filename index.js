@@ -53,7 +53,7 @@
 
 import express from "express";
 
-console.log("START");
+console.log("🔥 FILE LOADED");
 
 const app = express();
 
@@ -63,7 +63,16 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-// 🔥 CRITICAL FIX FOR RENDER
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("SERVER RUNNING ON PORT", PORT);
+// 🔥 IMPORTANT: MUST KEEP PROCESS ALIVE
+const server = app.listen(PORT, "0.0.0.0", () => {
+  console.log("🚀 LISTENING ON PORT:", PORT);
+});
+
+// 🔥 EXTRA SAFETY (FOR RENDER DETECTION)
+server.on("listening", () => {
+  console.log("✅ SERVER IS ACTIVE");
+});
+
+server.on("error", (err) => {
+  console.error("❌ SERVER ERROR:", err);
 });
