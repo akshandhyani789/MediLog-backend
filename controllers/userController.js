@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import { isValidIndianPhone } from "../utils/phoneValidator.js";
 
 // Firebase login handler
 export const firebaseLogin = async (req, res) => {
@@ -12,7 +13,7 @@ export const firebaseLogin = async (req, res) => {
       email,
       name,
       phone,
-       emailNotifications: true,
+      emailNotifications: true,
       notificationThreshold: 7,
       isFirstLogin: true,
     });
@@ -25,15 +26,34 @@ export const firebaseLogin = async (req, res) => {
 
 // Update profile after first login
 export const updateProfile = async (req, res) => {
-  const { uid } = req.user;
+  try {
+    const { uid } = req.user;
+    const { phone, businessPhone } = req.body;
 
-  const updatedUser = await User.findOneAndUpdate(
-    { firebaseUID: uid },
-    { ...req.body, isFirstLogin: false },
-    { new: true }
-  );
+    if (phone && !isValidIndianPhone(phone)) {
+      return res.status(400).json({
+        error: "Invalid phone number. Enter a valid 10-digit Indian mobile number.",
+      });
+    }
 
-  res.json(updatedUser);
+    if (businessPhone && !isValidIndianPhone(businessPhone)) {
+      return res.status(400).json({
+        error: "Invalid business phone number. Enter a valid 10-digit Indian mobile number.",
+      });
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { firebaseUID: uid },
+      { ...req.body, isFirstLogin: false },
+      { new: true }
+    );
+
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to update profile",
+    });
+  }
 };
 
 export const updateNotificationSettings = async (req, res) => {

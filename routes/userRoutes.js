@@ -3,6 +3,8 @@ import admin from "../config/firebase.js";
 import User from "../models/User.js";
 import { updateNotificationSettings,  } from "../controllers/userController.js";
 import protect from "../middleware/authMiddleware.js";
+import { isValidIndianPhone } from "../utils/phoneValidator.js";
+import { updateProfile } from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -63,61 +65,43 @@ router.post("/firebase-login", async (req, res) => {
 // ========================================
 // ✅ COMPLETE ONBOARDING
 // ========================================
-router.put("/complete-onboarding",protect, async (req, res) => {
+router.put("/complete-onboarding", protect, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = req.user;
 
-    if (!token) {
-      return res.status(401).json({ error: "No token provided" });
-    }
-
-    const decoded = await admin.auth().verifyIdToken(token);
-
-    // ✅ Extract all fields - both individual and vendor
     const { name, phone, age, role, businessName, ownerName, businessPhone } =
       req.body;
 
-    console.log("📥 Request body:", req.body);
+    if (phone && !isValidIndianPhone(phone)) {
+      return res.status(400).json({
+        error: "Invalid phone number. Enter a valid 10-digit Indian mobile number.",
+      });
+    }
 
-    // ✅ Build update object with all provided fields
+    if (businessPhone && !isValidIndianPhone(businessPhone)) {
+      return res.status(400).json({
+        error: "Invalid business phone number. Enter a valid 10-digit Indian mobile number.",
+      });
+    }
+
     const updateData = {
       isOnboarded: true,
     };
 
-    // Add individual fields if provided
     if (name) updateData.name = formatName(name);
-    if (phone) updateData.phone = phone;
+    if (phone) updateData.phone = phone.trim();
     if (age) updateData.age = age;
 
-    // Add vendor-specific fields if provided
-    if (role) {
-      console.log("Setting role to:", role);
-      updateData.role = role;
-    }
-    if (businessName) {
-      console.log("Setting businessName to:", businessName);
-      updateData.businessName = businessName;
-    }
-    if (ownerName) {
-      console.log("Setting ownerName to:", ownerName);
-      updateData.ownerName = formatName(ownerName);
-    }
-    if (businessPhone) {
-      console.log("Setting businessPhone to:", businessPhone);
-      updateData.businessPhone = businessPhone;
-    }
-
-    console.log("🔄 Update data being sent:", updateData);
+    if (role) updateData.role = role;
+    if (businessName) updateData.businessName = businessName;
+    if (ownerName) updateData.ownerName = formatName(ownerName);
+    if (businessPhone) updateData.businessPhone = businessPhone.trim();
 
     const user = await User.findOneAndUpdate(
       { firebaseUID: decoded.uid },
-      {
-        $set: updateData,
-      },
-      { new: true },
+      { $set: updateData },
+      { new: true }
     );
-
-    console.log("✅ Updated user:", user);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -132,7 +116,6 @@ router.put("/complete-onboarding",protect, async (req, res) => {
     res.status(500).json({ error: "Failed to complete onboarding" });
   }
 });
-
 
 router.put("/notification-settings", protect, updateNotificationSettings);
 
@@ -154,6 +137,9 @@ router.get("/notification-settings", protect, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+router.put("/update-profile", protect, updateProfile);
+
 
 export default router;
 
