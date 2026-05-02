@@ -36,6 +36,7 @@ const userMedicine = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  lastNotifiedAt: Date, // ✅ to track last notification
 
 }, { timestamps: true });
 

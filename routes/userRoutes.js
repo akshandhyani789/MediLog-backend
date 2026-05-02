@@ -1,6 +1,8 @@
 import express from "express";
 import admin from "../config/firebase.js";
 import User from "../models/User.js";
+import { updateNotificationSettings,  } from "../controllers/userController.js";
+import protect from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -37,20 +39,21 @@ router.post("/firebase-login", async (req, res) => {
           firebaseUID: uid,
           email,
           name: formatName(name),
+          phone: "", // ✅ initialize phone as empty string
           isOnboarded: false,
+          emailNotifications: true,
+          notificationThreshold: 7,
         },
       },
       {
         new: true,
         upsert: true,
-      }
+      },
     );
 
-    const isFirstLogin =
-      user.createdAt.getTime() === user.updatedAt.getTime();
+    const isFirstLogin = !user.isOnboarded;
 
     res.json({ isFirstLogin, user });
-
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Server error" });
@@ -60,7 +63,7 @@ router.post("/firebase-login", async (req, res) => {
 // ========================================
 // ✅ COMPLETE ONBOARDING
 // ========================================
-router.put("/complete-onboarding", async (req, res) => {
+router.put("/complete-onboarding",protect, async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
 
@@ -71,15 +74,8 @@ router.put("/complete-onboarding", async (req, res) => {
     const decoded = await admin.auth().verifyIdToken(token);
 
     // ✅ Extract all fields - both individual and vendor
-    const { 
-      name, 
-      phone, 
-      age, 
-      role, 
-      businessName, 
-      ownerName, 
-      businessPhone 
-    } = req.body;
+    const { name, phone, age, role, businessName, ownerName, businessPhone } =
+      req.body;
 
     console.log("📥 Request body:", req.body);
 
@@ -92,7 +88,7 @@ router.put("/complete-onboarding", async (req, res) => {
     if (name) updateData.name = formatName(name);
     if (phone) updateData.phone = phone;
     if (age) updateData.age = age;
-    
+
     // Add vendor-specific fields if provided
     if (role) {
       console.log("Setting role to:", role);
@@ -118,7 +114,7 @@ router.put("/complete-onboarding", async (req, res) => {
       {
         $set: updateData,
       },
-      { new: true }
+      { new: true },
     );
 
     console.log("✅ Updated user:", user);
@@ -131,11 +127,33 @@ router.put("/complete-onboarding", async (req, res) => {
       success: true,
       user,
     });
-
   } catch (error) {
     console.error("Onboarding error:", error);
     res.status(500).json({ error: "Failed to complete onboarding" });
   }
 });
 
+
+router.put("/notification-settings", protect, updateNotificationSettings);
+
+router.get("/notification-settings", protect, async (req, res) => {
+  try {
+    const user = await User.findOne({ firebaseUID: req.user.uid });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      emailNotifications: user.emailNotifications ?? true,
+      notificationThreshold: user.notificationThreshold ?? 7,
+    });
+
+  } catch (error) {
+    console.error("❌ Fetch settings error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;
+

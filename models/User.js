@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const  userSchema = new mongoose.Schema(
+const userSchema = new mongoose.Schema(
   {
     firebaseUID: {
       type: String,
@@ -8,18 +8,32 @@ const  userSchema = new mongoose.Schema(
       unique: true,
     },
 
-    email: String,
+    email: {
+      type: String,
+      required: true, // ✅ make email required (important for notifications)
+    },
 
     role: {
       type: String,
       enum: ["individual", "vendor"],
-      default: "individual", // default
+      default: "individual",
     },
 
     // COMMON
     name: String,
     phone: String,
     age: Number,
+
+    // 🔔 NOTIFICATION SETTINGS (NEW)
+    emailNotifications: {
+      type: Boolean,
+      default: true, // ✅ email alerts ON by default
+    },
+
+    notificationThreshold: {
+      type: Number,
+      default: 7, // days before expiry
+    },
 
     // INDIVIDUAL ONLY
     healthProfile: {

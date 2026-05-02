@@ -3,11 +3,14 @@ import dotenv from "dotenv";
 import cors from "cors";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js";
+import User from "./models/User.js";
 
 import medicineRoutes from "./routes/medicineRoutes.js";
 import userMedicineRoutes from "./routes/userMedicineRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import ocrRoutes from "./routes/ocrRoute.js";
+import startExpiryCron from "./cron/expiryNotifier.js";
+
 
 dotenv.config();
 
@@ -105,14 +108,11 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await connectDB();
+   startExpiryCron();
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log("=================================================");
-      console.log("🚀 MediLog Backend Running");
-      console.log("=================================================");
       console.log(`🌐 http://localhost:${PORT}`);
       console.log(`🧪 http://localhost:${PORT}/health`);
-      console.log("=================================================");
     });
   } catch (err) {
     console.error("❌ Failed to start server:", err);
