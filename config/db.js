@@ -7,7 +7,7 @@ const connectDB = async () => {
       throw new Error("MONGO_URI environment variable is not set!");
     }
 
-    console.log("   📡 Attempting MongoDB connection...");
+    console.log("    Attempting MongoDB connection...");
 
     // Connect with production-grade options
     const conn = await mongoose.connect(process.env.MONGO_URI, {
@@ -30,24 +30,24 @@ const connectDB = async () => {
     const mongoConnection = mongoose.connection;
     const dbName = mongoConnection.db?.getName?.() || mongoConnection.name || "unknown";
 
-    console.log(`✅ MongoDB connected successfully`);
+    console.log(` MongoDB connected successfully`);
     console.log(`   Host: ${mongoConnection.host}`);
     console.log(`   Port: ${mongoConnection.port}`);
     console.log(`   Database: ${dbName}`);
 
     // Handle connection events
     mongoConnection.on("disconnected", () => {
-      console.warn("⚠️  MongoDB disconnected");
+      console.warn("  MongoDB disconnected");
     });
 
     mongoConnection.on("error", (err) => {
-      console.error("❌ MongoDB connection error:", err.message);
+      console.error(" MongoDB connection error:", err.message);
     });
 
     return conn;
 
   } catch (err) {
-    console.error("❌ MongoDB Connection Failed:");
+    console.error(" MongoDB Connection Failed:");
     console.error(`   Error: ${err.message}`);
 
     if (err.message.includes("MONGO_URI")) {

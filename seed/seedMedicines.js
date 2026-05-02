@@ -145,6 +145,20 @@ const medicines = [
     barcodes: [{ code: "8904109449604" }],
     uses: ["Eye care"],
   },
+  {
+    name: "Stone Hit",
+    brand: "Austro",
+    dosage: "225ml",
+    barcodes: [{ code: "8906048911846" }],
+    uses: ["kidney Uninaray badder care"],
+  },
+  {
+    name: "Stone hit",
+    brand: "Austro",
+    dosage: "100mg",
+    barcodes: [{ code: "8906048911839" }],
+    uses: ["Eye care"],
+  },
 ];
 
 const seedData = async () => {
