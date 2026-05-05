@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import mongoose from "mongoose";
 import connectDB from "./config/db.js";
-import User from "./models/User.js";
 
 import medicineRoutes from "./routes/medicineRoutes.js";
 import userMedicineRoutes from "./routes/userMedicineRoutes.js";
@@ -17,17 +16,14 @@ dotenv.config();
 const app = express();
 
 // ========================
-// ENV (🔥 FIX IS HERE)
+// ENV
 // ========================
 const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 // ========================
-// MIDDLEWARE
+// CORS (🔥 FIXED)
 // ========================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
@@ -36,16 +32,18 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(null, true);
-    },
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// ========================
+// BODY PARSER (🔥 FIXED)
+// ========================
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ limit: "20mb", extended: true }));
 
 // ========================
 // ROUTES
@@ -85,7 +83,6 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    // optional cron (safe now)
     startExpiryCron();
 
     app.listen(PORT, "0.0.0.0", () => {

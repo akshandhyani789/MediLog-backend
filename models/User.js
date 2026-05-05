@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
 
     email: {
       type: String,
-      required: true, // ✅ make email required (important for notifications)
+      required: true,
     },
 
     role: {
@@ -24,15 +24,19 @@ const userSchema = new mongoose.Schema(
     phone: String,
     age: Number,
 
-    // 🔔 NOTIFICATION SETTINGS (NEW)
+    profileImage: {
+      type: String,
+      default: "",
+    },
+
     emailNotifications: {
       type: Boolean,
-      default: true, // ✅ email alerts ON by default
+      default: true,
     },
 
     notificationThreshold: {
       type: Number,
-      default: 7, // days before expiry
+      default: 7,
     },
 
     // INDIVIDUAL ONLY
