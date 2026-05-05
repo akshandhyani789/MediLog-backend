@@ -34,6 +34,7 @@ export const addUserMedicine = async (req, res) => {
       expiryDate: new Date(req.body.expiryDate),
       stock: parseInt(req.body.stock),
       category: (req.body.category?.trim() || "Tablet"),
+      maxStock: req.body.maxStock ? parseInt(req.body.maxStock) : 0,
     };
 
     console.log("✅ Saving medicine data:", medicineData);
@@ -74,6 +75,7 @@ export const getUserMedicines = async (req, res) => {
       frequency: med.frequency,
       expiryDate: med.expiryDate,
       stock: med.stock,
+      maxStock: med.maxStock || 0,
       createdAt: med.createdAt,
     }));
 
@@ -130,12 +132,10 @@ export const updateUserMedicine = async (req, res) => {
       return res.status(404).json({ error: "Medicine not found" });
     }
 
-    // 🔒 Ownership check
     if (medicine.userId !== userId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // ✅ Proper field mapping (VERY IMPORTANT)
     if (req.body.name !== undefined) {
       medicine.customMedicine.name = req.body.name;
     }
@@ -166,7 +166,53 @@ export const updateUserMedicine = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Update error:", error);
+    console.error("Update error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateMedicineStock = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const medicineId = req.params.id;
+    const { change } = req.body;
+
+    if (typeof change !== 'number') {
+      return res.status(400).json({ error: "Change must be a number" });
+    }
+
+    const medicine = await UserMedicine.findById(medicineId);
+
+    if (!medicine) {
+      return res.status(404).json({ error: "Medicine not found" });
+    }
+
+    if (medicine.userId !== userId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const newStock = medicine.stock + change;
+
+    if (newStock < 0) {
+      return res.status(400).json({ error: "Stock cannot be below 0" });
+    }
+
+    if (medicine.maxStock && newStock > medicine.maxStock) {
+      return res.status(400).json({ error: `Stock cannot exceed maximum of ${medicine.maxStock}` });
+    }
+
+    medicine.stock = newStock;
+    const updated = await medicine.save();
+
+    console.log("Stock updated for medicine", medicineId, "new stock:", newStock);
+
+    res.json({
+      message: "Stock updated successfully",
+      medicine: updated,
+    });
+
+  } catch (error) {
+    console.error("Stock update error:", error);
     res.status(500).json({ error: error.message });
   }
 };

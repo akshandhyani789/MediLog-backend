@@ -32,6 +32,12 @@ const userMedicine = new mongoose.Schema({
     default: 0,
   },
 
+  maxStock: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+
   expiryDate: {
     type: Date,
     required: true,
